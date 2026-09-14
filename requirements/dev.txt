@@ -29,7 +29,7 @@ black==26.5.1
     # via
     #   -r requirements/dev.in
     #   -r requirements/quality.txt
-build==1.6.0
+build==1.6.1
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
@@ -92,7 +92,7 @@ colorama==0.4.6
     # via
     #   -r requirements/ci.txt
     #   tox
-coverage[toml]==7.16.0
+coverage[toml]==7.16.1
     # via
     #   -r requirements/quality.txt
     #   pytest-cov
@@ -133,7 +133,7 @@ django-waffle==5.0.0
     #   -r requirements/quality.txt
     #   edx-django-utils
     #   edx-toggles
-djangorestframework==3.18.0
+djangorestframework==3.18.1
     # via
     #   -r requirements/quality.txt
     #   django-mock-queries
@@ -156,7 +156,7 @@ edx-opaque-keys[django]==4.0.0
     #   xblock
 edx-toggles==6.0.0
     # via -r requirements/quality.txt
-filelock==3.32.5
+filelock==3.32.6
     # via
     #   -r requirements/ci.txt
     #   python-discovery
@@ -224,7 +224,7 @@ oauthlib==3.3.1
     #   requests-oauthlib
 openedx-atlas==0.7.0
     # via -r requirements/quality.txt
-openedx-filters==3.9.0
+openedx-filters==3.12.0
     # via -r requirements/quality.txt
 packaging==26.3
     # via
@@ -246,7 +246,7 @@ pathspec==1.1.1
     #   black
 pip-tools==7.6.1
     # via -r requirements/pip-tools.txt
-platformdirs==4.11.7
+platformdirs==4.11.8
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -307,7 +307,7 @@ pylint-plugin-utils==0.9.0
     #   -r requirements/quality.txt
     #   pylint-celery
     #   pylint-django
-pymongo==4.18.0
+pymongo==4.18.1
     # via
     #   -r requirements/quality.txt
     #   edx-opaque-keys
@@ -343,7 +343,7 @@ python-discovery==1.6.0
     #   -r requirements/ci.txt
     #   tox
     #   virtualenv
-python-slugify==8.0.4
+python-slugify==9.0.0
     # via
     #   -r requirements/quality.txt
     #   code-annotations
@@ -417,7 +417,7 @@ tomlkit==0.15.1
     #   -r requirements/quality.txt
     #   edx-lint
     #   pylint
-tox==4.61.2
+tox==4.61.4
     # via -r requirements/ci.txt
 typing-extensions==4.16.0
     # via
@@ -425,7 +425,7 @@ typing-extensions==4.16.0
     #   -r requirements/quality.txt
     #   edx-opaque-keys
     #   tox
-tzdata==2026.3
+tzdata==2026.4
     # via
     #   -r requirements/quality.txt
     #   kombu
@@ -444,7 +444,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.7.8
+virtualenv==21.7.9
     # via
     #   -r requirements/ci.txt
     #   tox
