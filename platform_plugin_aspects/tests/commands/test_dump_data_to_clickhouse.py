@@ -4,13 +4,24 @@ Tests for the dump_data_to_clickhouse management command.
 
 from collections import namedtuple
 from datetime import datetime
+from unittest.mock import patch
 
 import django.core.management.base
 import pytest
 from django.core.management import call_command
+from django.test import override_settings
 from django_mock_queries.query import MockModel, MockSet
 
 from platform_plugin_aspects.sinks.base_sink import ModelBaseSink
+
+# The dummy sink stands in for a real, enabled sink. is_enabled() needs both a
+# model config entry and the enabled setting, so provide them for these tests.
+dummy_sink_enabled = override_settings(
+    EVENT_SINK_CLICKHOUSE_MODEL_CONFIG={
+        "dummy": {"module": "django.contrib.auth.models", "model": "User"},
+    },
+    EVENT_SINK_CLICKHOUSE_DUMMY_ENABLED=True,
+)
 
 CommandOptions = namedtuple(
     "TestCommandOptions", ["options", "expected_num_submitted", "expected_logs"]
@@ -180,6 +191,7 @@ def dump_command_basic_options():
         yield option
 
 
+@dummy_sink_enabled
 @pytest.mark.parametrize("test_command_option", dump_command_basic_options())
 def test_dump_courses_options(test_command_option, caplog):
     option_combination, expected_num_submitted, expected_outputs = test_command_option
@@ -223,6 +235,7 @@ def dump_basic_invalid_options():
         yield option
 
 
+@dummy_sink_enabled
 @pytest.mark.parametrize("test_command_option", dump_basic_invalid_options())
 def test_dump_courses_options_invalid(test_command_option, caplog):
     option_combination, expected_num_submitted, expected_outputs = test_command_option
@@ -233,3 +246,22 @@ def test_dump_courses_options_invalid(test_command_option, caplog):
     # assert mock_dump_data.apply_async.call_count == expected_num_submitted
     for expected_output in expected_outputs:
         assert expected_output in caplog.text
+
+
+@override_settings(
+    EVENT_SINK_CLICKHOUSE_MODEL_CONFIG={
+        "dummy": {"module": "django.contrib.auth.models", "model": "User"},
+    },
+    EVENT_SINK_CLICKHOUSE_DUMMY_ENABLED=False,
+)
+@patch("platform_plugin_aspects.sinks.base_sink.WaffleFlag.is_enabled")
+def test_dump_data_disabled_sink(mock_waffle_flag_is_enabled, caplog):
+    """
+    A disabled sink should log and dump nothing.
+    """
+    mock_waffle_flag_is_enabled.return_value = False
+
+    call_command("dump_data_to_clickhouse", object="dummy")
+
+    assert "Sink for dummy is disabled, no data will be dumped." in caplog.text
+    assert "Dumped" not in caplog.text
