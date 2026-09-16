@@ -194,6 +194,13 @@ class Command(BaseCommand):
             raise CommandError(message)
 
         Sink = ModelBaseSink.get_sink_by_model_name(options["object"])
+
+        if not Sink.is_enabled():
+            log.info(
+                f"Sink for {options['object']} is disabled, no data will be dumped."
+            )
+            return
+
         sink = Sink(connection_overrides, log)
         dump_target_objects_to_clickhouse(
             sink,
