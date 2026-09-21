@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-amqp==5.3.1
+amqp==5.4.0
     # via
     #   -r requirements/test.txt
     #   kombu
@@ -20,7 +20,7 @@ astroid==4.0.4
     # via
     #   pylint
     #   pylint-celery
-billiard==4.2.4
+billiard==4.3.0
     # via
     #   -r requirements/test.txt
     #   celery
@@ -62,7 +62,7 @@ click-plugins==1.1.1.2
     # via
     #   -r requirements/test.txt
     #   celery
-click-repl==0.3.0
+click-repl==0.4.0
     # via
     #   -r requirements/test.txt
     #   celery
@@ -128,7 +128,7 @@ fs==2.4.16
     # via
     #   -r requirements/test.txt
     #   xblock
-idna==3.19
+idna==3.20
     # via
     #   -r requirements/test.txt
     #   requests
@@ -176,9 +176,9 @@ oauthlib==3.3.1
     # via
     #   -r requirements/test.txt
     #   requests-oauthlib
-openedx-atlas==0.7.0
+openedx-atlas==0.7.1
     # via -r requirements/test.txt
-openedx-filters==3.12.0
+openedx-filters==3.14.0
     # via -r requirements/test.txt
 packaging==26.3
     # via
@@ -188,7 +188,7 @@ packaging==26.3
     #   pytest
 pathspec==1.1.1
     # via black
-platformdirs==4.11.8
+platformdirs==4.11.11
     # via
     #   black
     #   pylint
@@ -255,7 +255,7 @@ python-dateutil==2.9.0.post0
     #   -r requirements/test.txt
     #   celery
     #   xblock
-python-slugify==9.0.0
+python-slugify==9.1.0
     # via
     #   -r requirements/test.txt
     #   code-annotations
@@ -322,6 +322,7 @@ tomlkit==0.15.1
 typing-extensions==4.16.0
     # via
     #   -r requirements/test.txt
+    #   click-repl
     #   edx-opaque-keys
 tzdata==2026.4
     # via
@@ -331,7 +332,7 @@ tzlocal==5.4.4
     # via
     #   -r requirements/test.txt
     #   celery
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   -r requirements/test.txt
     #   requests
@@ -342,7 +343,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.8.3
+wcwidth==0.8.4
     # via
     #   -r requirements/test.txt
     #   prompt-toolkit
