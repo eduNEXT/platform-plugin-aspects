@@ -123,6 +123,18 @@ def plugin_settings(settings):
             "module": "openedx_learning.models",
             "model": "StudentCompetencyCriteriaGroupStatus",
         },
+        "competency_criterion": {
+            "module": "openedx_learning.models",
+            "model": "CompetencyCriterion",
+        },
+        "competency_rule_profile": {
+            "module": "openedx_learning.models",
+            "model": "CompetencyRuleProfile",
+        },
+        "student_competency_criterion_status": {
+            "module": "openedx_learning.models",
+            "model": "StudentCompetencyCriterionStatus",
+        },
     }
 
     # This is on by default here, off by default in tutor-contrib-aspects until we only

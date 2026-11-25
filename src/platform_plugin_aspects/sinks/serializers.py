@@ -439,3 +439,143 @@ class TaxonomySerializer(BaseSinkSerializer, serializers.ModelSerializer):
         if competency_api and competency_api.is_competency_taxonomy(instance):
             return "competency"
         return "tags"
+
+
+def get_criterion_course_key(criterion):
+    """
+    Return the course key of the course-level group above ``criterion``, or "" if it has none.
+
+    openedx-core puts a criterion in a leaf group, at any depth below the course-level group
+    (the nearest ancestor with a course run), so the walk goes up until it finds one.
+    """
+    group = criterion.group
+    while group is not None:
+        if group.course_id is not None:
+            return str(group.course.course_key)
+        group = group.parent
+    return ""
+
+
+class CompetencyCriterionSerializer(BaseSinkSerializer, serializers.ModelSerializer):
+    """
+    Serializer for the openedx-core CompetencyCriterion model: one subsection assessed for one competency.
+
+    The criterion's competency, subsection and course never change after it is created, so they
+    are denormalized here and on every learner criterion status row. The effective mastery rule
+    can change, through the criterion or through its rule profile, so it lives on this row only
+    and is resolved by openedx-core's get_effective_rule(), the same function grading uses.
+    """
+
+    uuid = serializers.CharField()
+    tag_id = serializers.IntegerField(source="object_tag.tag_id")
+    taxonomy_id = serializers.IntegerField(source="object_tag.taxonomy_id")
+    object_id = serializers.CharField(source="object_tag.object_id")
+    course_key = serializers.SerializerMethodField()
+    rule_source = serializers.SerializerMethodField()
+    rule_profile_id = serializers.SerializerMethodField()
+    rule_type = serializers.SerializerMethodField()
+    rule_payload = serializers.SerializerMethodField()
+    archived = serializers.SerializerMethodField()
+
+    class Meta:
+        """Meta class for the CompetencyCriterionSerializer"""
+
+        model = get_model("competency_criterion")
+        fields = [
+            "id",
+            "uuid",
+            "group_id",
+            "tag_id",
+            "taxonomy_id",
+            "object_id",
+            "course_key",
+            "rule_source",
+            "rule_profile_id",
+            "rule_type",
+            "rule_payload",
+            "archived",
+            "dump_id",
+            "time_last_dumped",
+        ]
+
+    def _effective_rule(self, instance):
+        """Return openedx-core's EffectiveRule for ``instance``, resolved once per row."""
+        cache = self.__dict__.setdefault("_effective_rules", {})
+        if instance.pk not in cache:
+            cache[instance.pk] = get_competency_api().get_effective_rule(instance)
+        return cache[instance.pk]
+
+    def get_course_key(self, instance):
+        """Return the course key of the course-level group above the criterion."""
+        return get_criterion_course_key(instance)
+
+    def get_rule_source(self, instance):
+        """Return "profile" or "override": where the criterion's rule comes from."""
+        return self._effective_rule(instance).source
+
+    def get_rule_profile_id(self, instance):
+        """Return the rule profile's id, or None for an override."""
+        return self._effective_rule(instance).rule_profile_id
+
+    def get_rule_type(self, instance):
+        """Return the effective rule type, such as "Grade"."""
+        return self._effective_rule(instance).rule_type
+
+    def get_rule_payload(self, instance):
+        """Return the effective rule payload as a JSON string, keys sorted."""
+        return json.dumps(self._effective_rule(instance).rule_payload, sort_keys=True)
+
+    def get_archived(self, instance):
+        """
+        Return 1 if the criterion is archived, else 0.
+
+        An integer, not a bool: the column is a UInt8, and ClickHouse won't parse a CSV "False" as one.
+        """
+        return int(instance.archived)
+
+
+class StudentCompetencyCriterionStatusSerializer(
+    BaseSinkSerializer, serializers.ModelSerializer
+):
+    """
+    Serializer for the openedx-core StudentCompetencyCriterionStatus model.
+
+    A learner's status on one criterion: Demonstrated or AttemptedNotDemonstrated, only ever
+    raised. The criterion's competency, subsection and course are denormalized because they never
+    change; its mastery rule is not, because it can (read it from the competency_criterion sink).
+    """
+
+    actor_id = serializers.SerializerMethodField()
+    tag_id = serializers.IntegerField(source="criterion.object_tag.tag_id")
+    taxonomy_id = serializers.IntegerField(source="criterion.object_tag.taxonomy_id")
+    object_id = serializers.CharField(source="criterion.object_tag.object_id")
+    course_key = serializers.SerializerMethodField()
+    status_name = serializers.CharField(source="status.status")
+
+    class Meta:
+        """Meta class for the StudentCompetencyCriterionStatusSerializer"""
+
+        model = get_model("student_competency_criterion_status")
+        fields = [
+            "id",
+            "actor_id",
+            "criterion_id",
+            "tag_id",
+            "taxonomy_id",
+            "object_id",
+            "course_key",
+            "status_id",
+            "status_name",
+            "created",
+            "modified",
+            "dump_id",
+            "time_last_dumped",
+        ]
+
+    def get_actor_id(self, instance):
+        """Return the learner's xAPI actor id instead of any user identifier."""
+        return get_or_create_xapi_actor_id(instance.user)
+
+    def get_course_key(self, instance):
+        """Return the course key of the course-level group above the criterion."""
+        return get_criterion_course_key(instance.criterion)

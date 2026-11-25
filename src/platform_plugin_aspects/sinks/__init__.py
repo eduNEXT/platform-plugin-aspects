@@ -4,6 +4,10 @@ This module contains the sinks for the platform plugin aspects.
 
 from .base_sink import BaseSink, ModelBaseSink
 from .catalog_pathway_sink import CatalogPathwaySink, CatalogPathwayTombstoneSink
+from .competency_criterion_sink import (
+    CompetencyCriterionSink,
+    StudentCompetencyCriterionStatusSink,
+)
 from .course_enrollment_sink import CourseEnrollmentSink
 from .course_overview_sink import CourseOverviewSink, XBlockSink
 from .external_id_sink import ExternalIdSink

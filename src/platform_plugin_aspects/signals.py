@@ -10,11 +10,13 @@ from opaque_keys import InvalidKeyError
 from platform_plugin_aspects.sinks import (
     CatalogPathwaySink,
     CatalogPathwayTombstoneSink,
+    CompetencyCriterionSink,
     CourseEnrollmentSink,
     ExternalIdSink,
     ObjectTagSink,
     PathwayEnrollmentSink,
     StudentCompetencyCourseStatusSink,
+    StudentCompetencyCriterionStatusSink,
     StudentCompetencyStatusSink,
     TagSink,
     TaxonomySink,
@@ -508,4 +510,92 @@ if _student_competency_course_status:  # pragma: no cover
     post_save.connect(
         on_student_competency_course_status_saved_txn,
         sender=_student_competency_course_status,
+    )
+
+
+def _queue_dump(sink_class, object_ids):
+    """Queue one dump per id in ``object_ids`` for ``sink_class``, if that sink is enabled."""
+    # import here, because signal is registered at startup, but items in tasks are not yet able to be loaded
+    from platform_plugin_aspects.tasks import (  # pylint: disable=import-outside-toplevel
+        dump_data_to_clickhouse,
+    )
+
+    if not sink_class.is_enabled():
+        return
+    for object_id in object_ids:
+        dump_data_to_clickhouse.delay(
+            sink_module=sink_class.__module__,
+            sink_name=sink_class.__name__,
+            object_id=str(object_id),
+        )
+
+
+def on_competency_criterion_saved_txn(
+    sender, instance, **kwargs
+):  # pylint: disable=unused-argument
+    """
+    Handle CompetencyCriterion saves: its rule, its rule profile or its archived flag changed.
+
+    Deferred to the commit, like the learner status sinks, so the dump reads the committed row.
+    """
+    transaction.on_commit(
+        lambda: _queue_dump(CompetencyCriterionSink, [instance.id]), robust=True
+    )
+
+
+_competency_criterion = get_model("competency_criterion")
+if _competency_criterion:  # pragma: no cover
+    post_save.connect(on_competency_criterion_saved_txn, sender=_competency_criterion)
+
+
+def on_competency_rule_profile_saved_txn(
+    sender, instance, **kwargs
+):  # pylint: disable=unused-argument
+    """
+    Handle CompetencyRuleProfile saves by re-dumping every criterion that uses the profile.
+
+    The criterion sink stores each criterion's effective rule, so a profile's new rule only
+    reaches ClickHouse through its criteria. Learner rows don't carry the rule and aren't touched.
+    """
+
+    def queue_criteria():
+        criteria = get_model("competency_criterion")
+        if not criteria or not CompetencyCriterionSink.is_enabled():
+            return
+        _queue_dump(
+            CompetencyCriterionSink,
+            criteria.objects.filter(rule_profile_id=instance.id).values_list(
+                "id", flat=True
+            ),
+        )
+
+    transaction.on_commit(queue_criteria, robust=True)
+
+
+_competency_rule_profile = get_model("competency_rule_profile")
+if _competency_rule_profile:  # pragma: no cover
+    post_save.connect(
+        on_competency_rule_profile_saved_txn, sender=_competency_rule_profile
+    )
+
+
+def on_student_competency_criterion_status_saved_txn(
+    sender, instance, **kwargs
+):  # pylint: disable=unused-argument
+    """
+    Handle StudentCompetencyCriterionStatus saves: a learner's status on a criterion was created or raised.
+
+    openedx-core writes these inside the grade's transaction, so the dump waits for the commit.
+    """
+    transaction.on_commit(
+        lambda: _queue_dump(StudentCompetencyCriterionStatusSink, [instance.id]),
+        robust=True,
+    )
+
+
+_student_competency_criterion_status = get_model("student_competency_criterion_status")
+if _student_competency_criterion_status:  # pragma: no cover
+    post_save.connect(
+        on_student_competency_criterion_status_saved_txn,
+        sender=_student_competency_criterion_status,
     )
